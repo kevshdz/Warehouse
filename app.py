@@ -15,14 +15,11 @@ from routes.auth_routes import auth_bp
 def create_app():
     app = Flask(__name__)
 
-    # Configuración de la base de datos
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/warehouse_personal'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Inicializar SQLAlchemy
     db.init_app(app)
 
-    # Registrar rutas (blueprints)
     app.register_blueprint(shoes_bp)
     app.register_blueprint(ui_config_bp)
     app.register_blueprint(jackets_bp)

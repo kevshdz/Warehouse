@@ -7,17 +7,13 @@ import re
 
 auth_bp = Blueprint('auth_bp', __name__)
 
-# Expresiones regulares para validación
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 PASSWORD_REGEX = re.compile(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$')
 
-# ==================== REGISTRO ====================
 @auth_bp.route('/auth/register', methods=['POST'])
 def register():
     try:
         data = request.get_json()
-        
-        # Validar campos requeridos
         campos_requeridos = ['nombre', 'apellido', 'email', 'password']
         for campo in campos_requeridos:
             if campo not in data or not data[campo]:
@@ -26,21 +22,18 @@ def register():
                     "message": f"El campo '{campo}' es requerido"
                 }), 400
         
-        # Validar formato de email
         if not EMAIL_REGEX.match(data['email']):
             return jsonify({
                 "success": False,
                 "message": "Formato de email inválido"
             }), 400
         
-        # Validar contraseña fuerte
         if not PASSWORD_REGEX.match(data['password']):
             return jsonify({
                 "success": False,
                 "message": "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número"
             }), 400
         
-        # Verificar si el email ya existe
         usuario_existente = Usuario.query.filter_by(email=data['email'].lower()).first()
         if usuario_existente:
             return jsonify({
@@ -48,7 +41,6 @@ def register():
                 "message": "El email ya está registrado"
             }), 409
         
-        # Crear nuevo usuario
         nuevo_usuario = Usuario(
             nombre=data['nombre'].strip(),
             apellido=data['apellido'].strip(),
@@ -58,10 +50,8 @@ def register():
             rol=data.get('rol', 'user')
         )
         
-        # Hashear contraseña
         nuevo_usuario.set_password(data['password'])
         
-        # Guardar en la base de datos
         db.session.add(nuevo_usuario)
         db.session.commit()
         
@@ -79,37 +69,31 @@ def register():
         }), 500
 
 
-# ==================== LOGIN ====================
 @auth_bp.route('/auth/login', methods=['POST'])
 def login():
     try:
         data = request.get_json()
         
-        # Validar campos requeridos
         if not data.get('email') or not data.get('password'):
             return jsonify({
                 "success": False,
                 "message": "Email y contraseña son requeridos"
             }), 400
         
-        # Buscar usuario por email
         usuario = Usuario.query.filter_by(email=data['email'].lower().strip()).first()
         
-        # Verificar si el usuario existe y la contraseña es correcta
         if not usuario or not usuario.check_password(data['password']):
             return jsonify({
                 "success": False,
                 "message": "Credenciales inválidas"
             }), 401
         
-        # Verificar si el usuario está activo
         if usuario.estatus == 0:
             return jsonify({
                 "success": False,
                 "message": "Usuario inactivo. Contacta al administrador"
             }), 403
         
-        # Actualizar último acceso
         usuario.ultimo_acceso = datetime.utcnow()
         db.session.commit()
         
@@ -125,8 +109,6 @@ def login():
             "message": f"Error en el login: {str(e)}"
         }), 500
 
-
-# ==================== OBTENER PERFIL ====================
 @auth_bp.route('/auth/profile/<int:id>', methods=['GET'])
 def get_profile(id):
     try:
@@ -150,7 +132,6 @@ def get_profile(id):
         }), 500
 
 
-# ==================== ACTUALIZAR PERFIL ====================
 @auth_bp.route('/auth/profile/<int:id>', methods=['PUT'])
 def update_profile(id):
     try:
@@ -164,7 +145,6 @@ def update_profile(id):
         
         data = request.get_json()
         
-        # Actualizar campos permitidos
         if 'nombre' in data:
             usuario.nombre = data['nombre'].strip()
         
@@ -177,7 +157,6 @@ def update_profile(id):
         if 'fecha_nacimiento' in data:
             usuario.fecha_nacimiento = data['fecha_nacimiento']
         
-        # Validar y actualizar email
         if 'email' in data:
             if not EMAIL_REGEX.match(data['email']):
                 return jsonify({
@@ -185,7 +164,6 @@ def update_profile(id):
                     "message": "Formato de email inválido"
                 }), 400
             
-            # Verificar que el email no esté en uso
             email_existente = Usuario.query.filter(
                 Usuario.email == data['email'].lower(),
                 Usuario.id != id
@@ -215,7 +193,6 @@ def update_profile(id):
         }), 500
 
 
-# ==================== CAMBIAR CONTRASEÑA ====================
 @auth_bp.route('/auth/change-password/<int:id>', methods=['POST'])
 def change_password(id):
     try:
@@ -229,28 +206,24 @@ def change_password(id):
         
         data = request.get_json()
         
-        # Validar campos requeridos
         if not data.get('current_password') or not data.get('new_password'):
             return jsonify({
                 "success": False,
                 "message": "Contraseña actual y nueva son requeridas"
             }), 400
         
-        # Verificar contraseña actual
         if not usuario.check_password(data['current_password']):
             return jsonify({
                 "success": False,
                 "message": "Contraseña actual incorrecta"
             }), 401
         
-        # Validar nueva contraseña
         if not PASSWORD_REGEX.match(data['new_password']):
             return jsonify({
                 "success": False,
                 "message": "La nueva contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número"
             }), 400
         
-        # Actualizar contraseña
         usuario.set_password(data['new_password'])
         db.session.commit()
         
@@ -267,7 +240,6 @@ def change_password(id):
         }), 500
 
 
-# ==================== LISTAR USUARIOS (Admin) ====================
 @auth_bp.route('/auth/users', methods=['GET'])
 def list_users():
     try:
@@ -298,7 +270,6 @@ def list_users():
         }), 500
 
 
-# ==================== DESACTIVAR USUARIO (Admin) ====================
 @auth_bp.route('/auth/users/<int:id>/deactivate', methods=['PATCH'])
 def deactivate_user(id):
     try:
@@ -333,7 +304,6 @@ def deactivate_user(id):
         }), 500
 
 
-# ==================== REACTIVAR USUARIO (Admin) ====================
 @auth_bp.route('/auth/users/<int:id>/activate', methods=['PATCH'])
 def activate_user(id):
     try:
