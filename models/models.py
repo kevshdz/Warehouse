@@ -1,42 +1,8 @@
 from extensions import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-
-
-"""
-class Producto(db.Model):
-    __tablename__ = 'productos'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    id_producto = db.Column(db.String(50), nullable=False)
-    nombre = db.Column(db.String(100), nullable=False)
-    descripcion = db.Column(db.Text)
-    imagen = db.Column(db.String(255))
-    cantidad = db.Column(db.Integer, default=0)
-    estatus = db.Column(db.SmallInteger, default=1)  # 1 = activo, 0 = inactivo
-    idUsuario = db.Column(db.Integer, nullable=False)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "id_producto": self.id_producto,
-            "nombre": self.nombre,
-            "descripcion": self.descripcion,
-            "imagen": self.imagen,
-            "cantidad": self.cantidad,
-            "estatus": self.estatus,
-            "idUsuario": self.idUsuario,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at
-        }
-"""
-
+import json
 # models/models.py
-from extensions import db
-from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
 
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
@@ -94,6 +60,9 @@ class Usuario(db.Model):
         return data
 
 
+
+
+
 class Producto(db.Model):
     __tablename__ = 'productos'
     
@@ -101,21 +70,31 @@ class Producto(db.Model):
     id_producto = db.Column(db.String(50), nullable=False)
     nombre = db.Column(db.String(100), nullable=False)
     descripcion = db.Column(db.Text)
-    imagen = db.Column(db.String(255))
+    imagen = db.Column(db.Text)  # ✅ Cambiado a TEXT para guardar JSON
     cantidad = db.Column(db.Integer, default=0)
+    precio = db.Column(db.Numeric(10, 2), default=0.00)
     estatus = db.Column(db.Integer, default=1)
     idUsuario = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     def to_dict(self):
+        # ✅ Convertir string JSON a lista de imágenes
+        imagenes = []
+        if self.imagen:
+            try:
+                imagenes = json.loads(self.imagen) if isinstance(self.imagen, str) else self.imagen
+            except:
+                imagenes = [self.imagen]  # Si es una sola imagen antigua
+        
         return {
             'id': self.id,
             'id_producto': self.id_producto,
             'nombre': self.nombre,
             'descripcion': self.descripcion,
-            'imagen': self.imagen,
+            'imagenes': imagenes,  # ✅ Array de imágenes
             'cantidad': self.cantidad,
+            'precio': float(self.precio) if self.precio else 0.00,
             'estatus': self.estatus,
             'idUsuario': self.idUsuario,
             'created_at': self.created_at.isoformat() if self.created_at else None,
