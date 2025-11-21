@@ -1,13 +1,8 @@
 from flask import Flask
 from extensions import db
-from routes.shoes_route import shoes_bp
-from routes.screen_config_route import ui_config_bp
-from routes.jacket_routes import jackets_bp
-from routes.pants_route import pants_bp
-from routes.accesories_route import accessories_bp
-from routes.shirts_route import shirts_bp
-from routes.sport_wear import sportswear_bp
-from routes.auth_routes import auth_bp
+from routes.create_Category import categories_bp
+from routes.create_forms import forms_bp
+
 
 
 
@@ -19,15 +14,9 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
-
-    app.register_blueprint(shoes_bp)
-    app.register_blueprint(ui_config_bp)
-    app.register_blueprint(jackets_bp)
-    app.register_blueprint(pants_bp)
-    app.register_blueprint(accessories_bp)
-    app.register_blueprint(shirts_bp)
-    app.register_blueprint(sportswear_bp)
-    app.register_blueprint(auth_bp)
+    app.register_blueprint(categories_bp)
+    app.register_blueprint(forms_bp)
+    
 
     return app
 
