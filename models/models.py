@@ -3,6 +3,61 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 
+
+class Usuario(db.Model):
+    __tablename__ = 'usuarios'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    apellido = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    telefono = db.Column(db.String(20))
+    fecha_nacimiento = db.Column(db.Date)
+    rol = db.Column(db.String(20), default='user')
+    estatus = db.Column(db.Integer, default=1)
+    email_verificado = db.Column(db.Integer, default=0)
+    ultimo_acceso = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    
+    def set_password(self, password):
+        """
+        Hashear la contraseña usando pbkdf2:sha256
+        Compatible con todas las versiones de Python
+        """
+        self.password_hash = generate_password_hash(
+            password, 
+            method='pbkdf2:sha256',  # ✅ Método compatible
+            salt_length=16
+        )
+    
+    def check_password(self, password):
+        """Verificar la contraseña"""
+        return check_password_hash(self.password_hash, password)
+    
+    def to_dict(self, include_sensitive=False):
+        """Convertir a diccionario (sin datos sensibles por defecto)"""
+        data = {
+            'id': self.id,
+            'nombre': self.nombre,
+            'apellido': self.apellido,
+            'email': self.email,
+            'telefono': self.telefono,
+            'fecha_nacimiento': self.fecha_nacimiento.isoformat() if self.fecha_nacimiento else None,
+            'rol': self.rol,
+            'estatus': self.estatus,
+            'email_verificado': bool(self.email_verificado),
+            'ultimo_acceso': self.ultimo_acceso.isoformat() if self.ultimo_acceso else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+        
+        if include_sensitive:
+            data['password_hash'] = self.password_hash
+        
+        return data
+
 class Category(db.Model):
     __tablename__ = 'categories'
     
@@ -74,6 +129,7 @@ class FormSubmission(db.Model):
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     active = db.Column(db.SmallInteger, default=1)
@@ -85,13 +141,14 @@ class FormSubmission(db.Model):
         data = {
             'id': self.id,
             'category_id': self.category_id,
+            'user_id': self.user_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'active': self.active
         }
         if include_values:
             data['values'] = [val.to_dict() for val in self.values]
         return data
-
 
 class FormValue(db.Model):
     __tablename__ = 'form_values'

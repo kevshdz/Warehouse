@@ -35,11 +35,22 @@ def save_image(file):
 
 @forms_bp.route('/submissions', methods=['POST'])
 def create_submission():
-    # Obtener category_id del form
+    # Obtener category_id y user_id del form
     category_id = request.form.get('category_id')
+    user_id = request.form.get('user_id')
+    
+    # Validar campos requeridos
+    if not user_id:
+        return jsonify({'error': 'user_id is required'}), 400
+    
+    if not category_id:
+        return jsonify({'error': 'category_id is required'}), 400
     
     # Crear el submission
-    submission = FormSubmission(category_id=category_id)
+    submission = FormSubmission(
+        category_id=category_id,
+        user_id=user_id
+    )
     db.session.add(submission)
     db.session.flush()
     
